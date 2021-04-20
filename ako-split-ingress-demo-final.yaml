@@ -1,0 +1,92 @@
+#This file is meant to run with 1.19 version of kubernetes. Ingress API changed between 1.18 and 1.19
+apiVersion: v1
+kind: Service
+metadata:
+  name: lb-svc-1
+spec:
+  type: NodePort
+  selector:
+    app: lb-svc-1
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lb-svc-2
+spec:
+  type: NodePort
+  selector:
+    app: lb-svc-2
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: myfirstingress
+  annotations:
+    kubernetes.io/ingress.class: "avi"
+spec:
+  rules:
+  - host: lb-svc.default.tkg.nsxlb.corp.tanzu
+    http:
+      paths:
+      - path: /old
+        pathType: Prefix
+        backend:
+          service:
+            name: lb-svc-2
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: lb-svc-1
+            port:
+              number: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lb-svc-nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: lb-svc-1
+  template:
+    metadata:
+      labels:
+        app: lb-svc-1
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+      imagePullSecrets:
+      - name: regcred
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lb-svc-nginx-old
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: lb-svc-2
+  template:
+    metadata:
+      labels:
+        app: lb-svc-2
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+      imagePullSecrets:
+      - name: regcred
