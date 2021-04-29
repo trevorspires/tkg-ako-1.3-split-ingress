@@ -36,7 +36,7 @@ spec:
   - host: lb-svc.default.tkg.nsxlb.corp.tanzu
     http:
       paths:
-      - path: /old
+      - path: /index.html
         pathType: Prefix
         backend:
           service:
